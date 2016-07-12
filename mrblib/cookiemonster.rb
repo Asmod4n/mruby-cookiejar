@@ -18,8 +18,8 @@ class Cookiemonster
 
     salt = Crypto::PwHash.salt
     nonce = Crypto::AEAD::Chacha20Poly1305.nonce
-    key = Crypto.pwhash(Crypto::AEAD::Chacha20Poly1305::KEYBYTES, password, salt, Crypto::PwHash::OPSLIMIT_INTERACTIVE,
-      Crypto::PwHash::MEMLIMIT_INTERACTIVE, Crypto::PwHash::ALG_ARGON2I13)
+    key = Crypto.pwhash(Crypto::AEAD::Chacha20Poly1305::KEYBYTES, password, salt, Crypto::PwHash::OPSLIMIT_MODERATE,
+      Crypto::PwHash::MEMLIMIT_MODERATE, Crypto::PwHash::ALG_ARGON2I13)
     seed = RandomBytes.buf(Crypto::Box::SEEDBYTES)
     ciphertext = Crypto::AEAD::Chacha20Poly1305.encrypt(seed, nonce, key, user_hash)
     @pwdb[user_hash] = {salt: salt,

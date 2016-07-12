@@ -19,6 +19,8 @@ def cookiemonster
         "help"
       elsif buf.start_with?("backup"[0...buf.bytesize])
         "backup"
+      elsif buf.start_with?("cls"[0...buf.bytesize])
+        "cls"
       end
     end
   end
@@ -37,6 +39,8 @@ def cookiemonster
         Linenoise::Hint.new("help"[buf.bytesize..-1], 35, true)
       elsif buf.start_with?("backup"[0...buf.bytesize])
         Linenoise::Hint.new("backup"[buf.bytesize..-1], 35, true)
+      elsif buf.start_with?("cls"[0...buf.bytesize])
+        Linenoise::Hint.new("cls"[buf.bytesize..-1], 35, true)
       end
     end
   end
@@ -47,7 +51,9 @@ def cookiemonster
       if line == 'quit'||line == 'exit'
         return
       elsif line == 'help'||line == '?'
-        puts "register <user> <password>\nauth <user> <password>\nset <key> <value>\nget <key>\nbackup <path>\nquit\nexit"
+        puts "register <user> <password>\nauth <user> <password>\nset <key> <value>\nget <key>\nbackup <path>\nquit\nexit\ncls clears the screen"
+      elsif line == 'cls'
+        Linenoise.clear_screen
       elsif line.start_with?('register')
         cmd, user, password = line.split("\s", 3)
         if !user||!password
