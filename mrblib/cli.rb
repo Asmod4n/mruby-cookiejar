@@ -67,7 +67,7 @@ def cookiemonster
             @cryptor = @monster.register(user, password)
             @user = MessagePack.unpack(user.to_msgpack)
           rescue Cookiemonster::Error => e
-            puts e
+            puts "#{e.class}: #{e}"
           end
         end
       elsif line.start_with?('auth')

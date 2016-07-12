@@ -25,8 +25,8 @@ class Cookiemonster
     @pwdb[user_hash] = {salt: salt,
       nonce: nonce,
       ciphertext: ciphertext,
-      opslimit: Crypto::PwHash::OPSLIMIT_INTERACTIVE,
-      memlimit: Crypto::PwHash::MEMLIMIT_INTERACTIVE}.to_msgpack
+      opslimit: Crypto::PwHash::OPSLIMIT_MODERATE,
+      memlimit: Crypto::PwHash::MEMLIMIT_MODERATE}.to_msgpack
     keypair = Crypto::Box.keypair(seed)
     keypair[:secret_key].noaccess
     Cryptor.new(@datadb, keypair)
