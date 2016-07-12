@@ -1,6 +1,7 @@
 def cookiemonster
   if ARGV.count != 2
     puts "Usage: #{ARGV[0]} <database>"
+    return
   end
   @monster = Cookiemonster.new(ARGV[1])
 
