@@ -4,14 +4,54 @@ def cookiemonster
     return
   end
   @monster = Cookiemonster.new(ARGV[1])
+  if @monster.empty?
+    puts "Register your first user"
+  end
+
+  tried = 0
+
+  while tried < 3
+    user = linenoise("Username:")
+    password = Cookiemonster.getpass
+    if @monster.empty?
+      unless password.securecmp(Cookiemonster.getpass("Retype Password:"))
+        puts "Passwords don't macth\n\n"
+        tried += 1
+        next
+      end
+    end
+    if user && user.empty?
+      puts "Username cannot be empty\n\n"
+      tried += 1
+      next
+    end
+    if password && password.empty?
+      puts "Password cannot be empty\n\n"
+      tried += 1
+      next
+    end
+    begin
+      if @monster.empty?
+        @cryptor = @monster.register(user, password)
+      else
+        @cryptor = @monster.auth(user, password)
+      end
+      @user = MessagePack.unpack(user.to_msgpack)
+      break
+    rescue Cookiemonster::Error => e
+      tried += 1
+      puts "#{e.class}: #{e}\n"
+      next
+    end
+  end
+
+  if tried == 3
+    return
+  end
 
   Linenoise.completion do |buf|
     unless buf.empty?
-      if buf.start_with?("register"[0...buf.bytesize])
-        "register"
-      elsif buf.start_with?("auth"[0...buf.bytesize])
-        "auth"
-      elsif buf.start_with?("get"[0...buf.bytesize])
+      if buf.start_with?("get"[0...buf.bytesize])
         "get" if @cryptor
       elsif buf.start_with?("set"[0...buf.bytesize])
         "set" if @cryptor
@@ -27,11 +67,7 @@ def cookiemonster
 
   Linenoise.hints do |buf|
     unless buf.empty?
-      if buf.start_with?("register"[0...buf.bytesize])
-        Linenoise::Hint.new("register"[buf.bytesize..-1], 35, true)
-      elsif buf.start_with?("auth"[0...buf.bytesize])
-        Linenoise::Hint.new("auth"[buf.bytesize..-1], 35, true)
-      elsif buf.start_with?("get"[0...buf.bytesize])
+      if buf.start_with?("get"[0...buf.bytesize])
         Linenoise::Hint.new("get"[buf.bytesize..-1], 35, true) if @cryptor
       elsif buf.start_with?("set"[0...buf.bytesize])
         Linenoise::Hint.new("set"[buf.bytesize..-1], 35, true) if @cryptor
@@ -51,41 +87,9 @@ def cookiemonster
       if line == 'quit'||line == 'exit'
         return
       elsif line == 'help'||line == '?'
-        puts "register <user> <password>\nauth <user> <password>\nset <key> <value>\nget <key>\nbackup <path>\nquit\nexit\ncls clears the screen"
+        puts "set <key> <value>\nget <key>\nbackup <path>\nquit\nexit\ncls clears the screen"
       elsif line == 'cls'
         Linenoise.clear_screen
-      elsif line.start_with?('register')
-        cmd, user, password = line.split("\s", 3)
-        if !user||!password
-          puts "user or password missing, try 'help' or '?'"
-        elsif user && user.empty?
-          puts "user cannot be empty"
-        elsif password && password.empty?
-          puts "password cannot be empty"
-        else
-          begin
-            @cryptor = @monster.register(user, password)
-            @user = MessagePack.unpack(user.to_msgpack)
-          rescue Cookiemonster::Error => e
-            puts "#{e.class}: #{e}"
-          end
-        end
-      elsif line.start_with?('auth')
-        cmd, user, password = line.split("\s", 3)
-        if !user||!password
-          puts "user or password missing, try 'help' or '?'"
-        elsif user && user.empty?
-          puts "user cannot be empty"
-        elsif password && password.empty?
-          puts "password cannot be empty"
-        else
-          begin
-            @cryptor = @monster.auth(user, password)
-            @user = MessagePack.unpack(user.to_msgpack)
-          rescue Crypto::Error, Cookiemonster::Error => e
-            puts "Cannot log you in"
-          end
-        end
       elsif line.start_with?('set')
         unless @cryptor
           puts "Not logged in"
@@ -123,7 +127,7 @@ def cookiemonster
         if !path
           puts "path missing"
         elsif path.empty?
-          puts "path missing"
+          puts "path cannot be empty"
         else
           @monster.backup(path)
         end

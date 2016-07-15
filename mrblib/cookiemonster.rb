@@ -7,6 +7,10 @@ class Cookiemonster
     @passwdqc = Passwdqc.new
   end
 
+  def empty?
+    @pwdb.empty?
+  end
+
   def register(user, password)
     user_hash = Crypto.generichash(user, Crypto::GenericHash::BYTES)
     if @pwdb[user_hash]
@@ -58,5 +62,16 @@ class Cookiemonster
   def backup(path)
     @env.copy2(path, MDB::CP_COMPACT)
     self
+  end
+
+  def passwd(user, oldpassword, newpassword)
+    user_hash = Crypto.generichash(user, Crypto::GenericHash::BYTES)
+    unless login = @pwdb[user_hash]
+      raise UserNotExistsError, "User #{user} doesn't exist"
+    end
+
+    if reason = @passwdqc.check(newpassword, oldpassword)
+      raise PasswordError, reason
+    end
   end
 end
