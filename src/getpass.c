@@ -139,6 +139,9 @@ mrb_getpass(mrb_state *mrb, mrb_value self)
     term.c_lflag |= ECHO;
     tcsetattr(fileno(fp), TCSAFLUSH|TCSASOFT, &term);
   }
+  if (feof(fp)) {
+    buf = mrb_nil_value();
+  }
   if (fp != stdin) {
     fclose(fp);
   }

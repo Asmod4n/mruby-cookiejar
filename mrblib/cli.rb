@@ -11,8 +11,11 @@ def cookiemonster
   tried = 0
 
   while tried < 3
-    user = linenoise("Username:")
+    user = linenoise("login:")
     password = Cookiemonster.getpass
+    if !user||!password
+      return
+    end
     if @monster.empty?
       unless password.securecmp(Cookiemonster.getpass("Retype Password:"))
         puts "Passwords don't macth\n\n"
@@ -21,12 +24,12 @@ def cookiemonster
       end
     end
     if user && user.empty?
-      puts "Username cannot be empty\n\n"
+      puts "Login incorrect\n\n"
       tried += 1
       next
     end
     if password && password.empty?
-      puts "Password cannot be empty\n\n"
+      puts "Login incorrect\n\n"
       tried += 1
       next
     end
@@ -38,10 +41,9 @@ def cookiemonster
       end
       @user = MessagePack.unpack(user.to_msgpack)
       break
-    rescue Cookiemonster::Error => e
+    rescue Cookiemonster::Error, Crypto::Error => e
       tried += 1
-      puts "#{e.class}: #{e}\n"
-      next
+      puts "Login incorrect\n\n"
     end
   end
 
