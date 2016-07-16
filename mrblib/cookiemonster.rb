@@ -11,7 +11,7 @@ class Cookiemonster
     @pwdb.empty?
   end
 
-  def register(user, password)
+  def useradd(user, password)
     user_hash = Crypto.generichash(user, Crypto::GenericHash::BYTES)
     if @pwdb[user_hash]
       raise UserExistsError, "User #{user} already exists"
@@ -40,7 +40,7 @@ class Cookiemonster
     Sodium.memzero(seed, seed.bytesize) if seed
   end
 
-  def auth(user, password)
+  def login(user, password)
     user_hash = Crypto.generichash(user, Crypto::GenericHash::BYTES)
     unless login = @pwdb[user_hash]
       raise UserNotExistsError, "User #{user} doesn't exist"

@@ -129,18 +129,20 @@ mrb_getpass(mrb_state *mrb, mrb_value self)
         fclose(fp);
       }
       sigprocmask(SIG_UNBLOCK, &stop, NULL);
-      mrb_funcall(mrb, mrb_obj_value(mrb_module_get(mrb, "Sodium")), "memzero", 2, buf, mrb_fixnum_value(RSTRING_LEN(buf)));
+      if (mrb_test(buf)) {
+        mrb_funcall(mrb, mrb_obj_value(mrb_module_get(mrb, "Sodium")), "memzero", 2, buf, mrb_fixnum_value(RSTRING_LEN(buf)));
+      }
       MRB_THROW(mrb->jmp);
   }
   MRB_END_EXC(&c_jmp);
 
+  if (feof(fp)) {
+    buf = mrb_nil_value();
+  }
   write(fileno(outfp), "\n", 1);
   if (echo) {
     term.c_lflag |= ECHO;
     tcsetattr(fileno(fp), TCSAFLUSH|TCSASOFT, &term);
-  }
-  if (feof(fp)) {
-    buf = mrb_nil_value();
   }
   if (fp != stdin) {
     fclose(fp);

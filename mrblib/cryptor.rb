@@ -1,11 +1,11 @@
 class Cookiemonster
   class Cryptor
     def initialize(datadb, keypair)
-      @datadb = datadb
-      @keypair = keypair
-      unless keypair[:primitive] == Crypto::Box::PRIMITIVE
+      unless Crypto::Box::PRIMITIVE == keypair[:primitive]
         raise ArgumentError, "keypair can only be a Crypto::Box.keypair"
       end
+      @datadb = datadb
+      @keypair = keypair
     end
 
     def []=(key, value)
