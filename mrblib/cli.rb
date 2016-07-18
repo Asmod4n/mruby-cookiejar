@@ -74,6 +74,10 @@ def cookiemonster
         "backup"
       elsif buf.start_with?("cls"[0...buf.bytesize])
         "cls"
+      elsif buf.start_with?("quit"[0...buf.bytesize])
+        "quit"
+      elsif buf.start_with?("exit"[0...buf.bytesize])
+        "exit"
       end
     end
   end
@@ -94,6 +98,10 @@ def cookiemonster
         Linenoise::Hint.new("backup"[buf.bytesize..-1], 35, true)
       elsif buf.start_with?("cls"[0...buf.bytesize])
         Linenoise::Hint.new("cls"[buf.bytesize..-1], 35, true)
+      elsif buf.start_with?("exit"[0...buf.bytesize])
+        Linenoise::Hint.new("exit"[buf.bytesize..-1], 35, true)
+      elsif buf.start_with?("quit"[0...buf.bytesize])
+        Linenoise::Hint.new("quit"[buf.bytesize..-1], 35, true)
       end
     end
   end
