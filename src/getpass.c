@@ -64,6 +64,7 @@
 #include <paths.h>
 #include <errno.h>
 #include <unistd.h>
+#include <sodium.h>
 
 static mrb_value
 mrb_getpass(mrb_state *mrb, mrb_value self)
@@ -113,7 +114,7 @@ mrb_getpass(mrb_state *mrb, mrb_value self)
   MRB_TRY(&c_jmp)
   {
       mrb->jmp = &c_jmp;
-      while ((ch = getc(fp)) != EOF && ch != '\n') {
+      while ((ch = fgetc(fp)) != EOF && ch != '\n') {
         mrb_str_cat(mrb, buf, (const char *) &ch, 1);
       }
       mrb->jmp = prev_jmp;
@@ -128,10 +129,10 @@ mrb_getpass(mrb_state *mrb, mrb_value self)
       if (fp != stdin) {
         fclose(fp);
       }
-      sigprocmask(SIG_UNBLOCK, &stop, NULL);
-      if (mrb_test(buf)) {
-        mrb_funcall(mrb, mrb_obj_value(mrb_module_get(mrb, "Sodium")), "memzero", 2, buf, mrb_fixnum_value(RSTRING_LEN(buf)));
+      if (mrb_string_p(buf)) {
+        sodium_memzero(RSTRING_PTR(buf), RSTRING_CAPA(buf));
       }
+      sigprocmask(SIG_UNBLOCK, &stop, NULL);
       MRB_THROW(mrb->jmp);
   }
   MRB_END_EXC(&c_jmp);
