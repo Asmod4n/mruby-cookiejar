@@ -35,9 +35,9 @@ class Cookiemonster
     keypair[:secret_key].noaccess
     Cryptor.new(@datadb, keypair)
   ensure
-    Sodium.memzero(password, password.bytesize) if password
+    Sodium.memzero(password) if password
     key.free if key
-    Sodium.memzero(seed, seed.bytesize) if seed
+    Sodium.memzero(seed) if seed
   end
 
   def login(user, password)
@@ -54,9 +54,9 @@ class Cookiemonster
     keypair[:secret_key].noaccess
     Cryptor.new(@datadb, keypair)
   ensure
-    Sodium.memzero(password, password.bytesize) if password
+    Sodium.memzero(password) if password
     key.free if key
-    Sodium.memzero(seed, seed.bytesize) if seed
+    Sodium.memzero(seed) if seed
   end
 
   def backup(path)

@@ -17,9 +17,9 @@ class Cookiemonster
       @datadb[hash] = {nonce: nonce, ciphertext: ciphertext}.to_msgpack
       self
     ensure
-      Sodium.memzero(key, key.bytesize) if key
-      Sodium.memzero(value, value.bytesize) if value.respond_to?(:bytesize)
-      Sodium.memzero(msgpack_value, msgpack_value.bytesize) if msgpack_value
+      Sodium.memzero(key) if key
+      Sodium.memzero(value) if value.respond_to?(:bytesize)
+      Sodium.memzero(msgpack_value) if msgpack_value
       @keypair[:secret_key].noaccess
     end
 
@@ -33,9 +33,9 @@ class Cookiemonster
       value = Crypto::Box.open(ciphertext[:ciphertext], ciphertext[:nonce], @keypair[:public_key], @keypair[:secret_key])
       MessagePack.unpack(value, true)
     ensure
-      Sodium.memzero(key, key.bytesize) if key
+      Sodium.memzero(key) if key
       @keypair[:secret_key].noaccess
-      Sodium.memzero(value, value.bytesize) if value
+      Sodium.memzero(value) if value
     end
   end
 end
