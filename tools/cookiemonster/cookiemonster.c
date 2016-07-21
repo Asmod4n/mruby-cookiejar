@@ -11,7 +11,7 @@
 #include <mruby/array.h>
 #include <string.h>
 
-int main(const int argc, const char *argv[])
+int main(const int argc, const char** const argv)
 {
   mrb_state *mrb = mrb_open();
   if (!mrb) {
@@ -47,7 +47,9 @@ int main(const int argc, const char *argv[])
   {
       mrb->jmp = prev_jmp;
       ret = EXIT_FAILURE;
+#ifdef MRB_DEBUG
       mrb_print_error(mrb);
+#endif
   }
   MRB_END_EXC(&c_jmp);
 

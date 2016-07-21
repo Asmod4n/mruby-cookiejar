@@ -64,25 +64,15 @@
 #include <paths.h>
 #include <errno.h>
 #include <unistd.h>
-#include <sodium.h>
+#include <string.h>
 
 static mrb_value
 mrb_getpass(mrb_state *mrb, mrb_value self)
 {
-  const char *prompt = "Password:";
   sigset_t stop;
   sigemptyset (&stop);
   sigaddset(&stop, SIGINT);
   sigaddset(&stop, SIGTSTP);
-  FILE *outfp, *fp;
-  struct termios term;
-  int echo;
-  struct mrb_jmpbuf* prev_jmp = mrb->jmp;
-  struct mrb_jmpbuf c_jmp;
-  int ch;
-  mrb_value buf = mrb_str_buf_new(mrb, 0);
-
-  mrb_get_args(mrb, "|z", &prompt);
 
   /*
    * note - blocking signals isn't necessarily the
@@ -90,34 +80,74 @@ mrb_getpass(mrb_state *mrb, mrb_value self)
    */
   sigprocmask(SIG_BLOCK, &stop, NULL);
 
-  /*
-   * read and write to /dev/tty if possible; else read from
-   * stdin and write to stderr.
-   */
-  if ((outfp = fp = fopen(_PATH_TTY, "w+")) == NULL) {
-    if (errno == ENOMEM) {
-      sigprocmask(SIG_UNBLOCK, &stop, NULL);
-      mrb_exc_raise(mrb, mrb_obj_value(mrb->nomem_err));
-    }
-    outfp = stderr;
-    fp = stdin;
-  }
-
-  tcgetattr(fileno(fp), &term);
-  if ((echo = (term.c_lflag & ECHO))) {
-    term.c_lflag &= ~ECHO;
-    tcsetattr(fileno(fp), TCSAFLUSH|TCSASOFT, &term);
-  }
-  fputs(prompt, outfp);
-  rewind(outfp);      /* implied flush */
+  struct mrb_jmpbuf* prev_jmp = mrb->jmp;
+  struct mrb_jmpbuf c_jmp;
+  FILE *fp = NULL, *outfp = NULL;
+  mrb_value buf = mrb_nil_value();
+  struct termios term = {0};
+  int echo = 0;
 
   MRB_TRY(&c_jmp)
   {
-      mrb->jmp = &c_jmp;
-      while ((ch = fgetc(fp)) != EOF && ch != '\n') {
-        mrb_str_cat(mrb, buf, (const char *) &ch, 1);
+    mrb->jmp = &c_jmp;
+
+    /*
+     * read and write to /dev/tty if possible; else read from
+     * stdin and write to stderr.
+     */
+    errno = 0;
+    if ((outfp = fp = fopen(_PATH_TTY, "w+")) == NULL) {
+      if (errno == ENOMEM) {
+        sigprocmask(SIG_UNBLOCK, &stop, NULL);
+        mrb_exc_raise(mrb, mrb_obj_value(mrb->nomem_err));
       }
-      mrb->jmp = prev_jmp;
+      fp = stdin;
+      outfp = stderr;
+    }
+
+    // we require a tty
+    if (!isatty(fileno(fp))||!isatty(fileno(outfp))) {
+      mrb_raise(mrb, E_RUNTIME_ERROR, "sorry, you must have a tty");
+    }
+
+    const char *prompt = "Password:";
+
+    mrb_get_args(mrb, "|z", &prompt);
+
+    buf = mrb_str_buf_new(mrb, 0);
+    memset(RSTRING_PTR(buf), 0, RSTRING_CAPA(buf));
+
+    // disable echoing of the password, if it was enabled
+    tcgetattr(fileno(fp), &term);
+    if ((echo = (term.c_lflag & ECHO))) {
+      term.c_lflag &= ~ECHO;
+      tcsetattr(fileno(fp), TCSAFLUSH|TCSASOFT, &term);
+    }
+    fputs(prompt, outfp);
+    rewind(outfp);      /* implied flush */
+
+    int ch;
+    while ((ch = fgetc(fp)) != EOF && ch != '\n') {
+      mrb_str_cat(mrb, buf, (const char *) &ch, 1);
+    }
+
+    if (feof(fp)) {
+      memset(RSTRING_PTR(buf), 0, RSTRING_CAPA(buf));
+      buf = mrb_nil_value();
+    }
+    write(fileno(outfp), "\n", 1);
+
+    // enable echoing again
+    if (echo) {
+      term.c_lflag |= ECHO;
+      tcsetattr(fileno(fp), TCSAFLUSH|TCSASOFT, &term);
+    }
+    if (fp != stdin) {
+      fclose(fp);
+    }
+    sigprocmask(SIG_UNBLOCK, &stop, NULL);
+
+    mrb->jmp = prev_jmp;
   }
   MRB_CATCH(&c_jmp)
   {
@@ -126,29 +156,16 @@ mrb_getpass(mrb_state *mrb, mrb_value self)
         term.c_lflag |= ECHO;
         tcsetattr(fileno(fp), TCSAFLUSH|TCSASOFT, &term);
       }
-      if (fp != stdin) {
+      if (fp && fp != stdin) {
         fclose(fp);
       }
       if (mrb_string_p(buf)) {
-        sodium_memzero(RSTRING_PTR(buf), RSTRING_CAPA(buf));
+        memset(RSTRING_PTR(buf), 0, RSTRING_CAPA(buf));
       }
       sigprocmask(SIG_UNBLOCK, &stop, NULL);
       MRB_THROW(mrb->jmp);
   }
   MRB_END_EXC(&c_jmp);
-
-  if (feof(fp)) {
-    buf = mrb_nil_value();
-  }
-  write(fileno(outfp), "\n", 1);
-  if (echo) {
-    term.c_lflag |= ECHO;
-    tcsetattr(fileno(fp), TCSAFLUSH|TCSASOFT, &term);
-  }
-  if (fp != stdin) {
-    fclose(fp);
-  }
-  sigprocmask(SIG_UNBLOCK, &stop, NULL);
 
   return buf;
 }
