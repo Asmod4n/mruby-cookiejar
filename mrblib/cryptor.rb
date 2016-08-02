@@ -37,5 +37,20 @@ class Cookiemonster
       @keypair[:secret_key].noaccess
       Sodium.memzero(value) if value
     end
+
+    def del(key)
+      @keypair[:secret_key].readonly
+      hash = Crypto.generichash(key, Crypto::GenericHash::BYTES, @keypair[:secret_key])
+      @datadb.del(hash)
+      self
+    ensure
+      Sodium.memzero(key) if key
+      @keypair[:secret_key].noaccess
+    end
+
+    def drop
+      @datadb.drop(true)
+      self
+    end
   end
 end

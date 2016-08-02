@@ -13,15 +13,15 @@ def cookiemonster
   while tried < 3
     user = linenoise("login:")
     if @monster.empty?
-      password = Cookiemonster.getpass("Enter new password:")
+      password = getpass("Enter new password:")
     else
-      password = Cookiemonster.getpass
+      password = getpass
     end
     if !user||!password
       return
     end
     if @monster.empty?
-      unless password == Cookiemonster.getpass("Retype new password:")
+      unless password.securecmp(getpass("Retype new password:"))
         puts "Passwords don't macth\n\n"
         tried += 1
         next
@@ -29,11 +29,13 @@ def cookiemonster
     end
     if user && user.empty?
       puts "Login incorrect\n\n"
+      Sleep.sleep 5
       tried += 1
       next
     end
     if password && password.empty?
       puts "Login incorrect\n\n"
+      Sleep.sleep 5
       tried += 1
       next
     end
@@ -43,12 +45,16 @@ def cookiemonster
       else
         @cryptor = @monster.login(user, password)
       end
-      @user = MessagePack.unpack(user.to_msgpack)
+      @user = user
       break
     rescue Cookiemonster::PasswordError => e
       tried += 1
       puts "#{e.class}: #{e}\n\n"
-    rescue Cookiemonster::Error, Crypto::Error
+    rescue Cookiemonster::Error
+      tried += 1
+      puts "Login incorrect\n\n"
+      Sleep.sleep 5
+    rescue Crypto::Error
       tried += 1
       puts "Login incorrect\n\n"
     end
@@ -68,6 +74,10 @@ def cookiemonster
         "get"
       elsif buf.start_with?("set"[0...buf.bytesize])
         "set"
+      elsif buf.start_with?("del"[0...buf.bytesize])
+        "del"
+      elsif buf.start_with?("drop"[0...buf.bytesize])
+        "drop"
       elsif buf.start_with?("help"[0...buf.bytesize])
         "help"
       elsif buf.start_with?("backup"[0...buf.bytesize])
@@ -92,6 +102,10 @@ def cookiemonster
         Linenoise::Hint.new("get"[buf.bytesize..-1], 35, true)
       elsif buf.start_with?("set"[0...buf.bytesize])
         Linenoise::Hint.new("set"[buf.bytesize..-1], 35, true)
+      elsif buf.start_with?("del"[0...buf.bytesize])
+        Linenoise::Hint.new("del"[buf.bytesize..-1], 35, true)
+      elsif buf.start_with?("drop"[0...buf.bytesize])
+        Linenoise::Hint.new("drop"[buf.bytesize..-1], 35, true)
       elsif buf.start_with?("help"[0...buf.bytesize])
         Linenoise::Hint.new("help"[buf.bytesize..-1], 35, true)
       elsif buf.start_with?("backup"[0...buf.bytesize])
@@ -112,7 +126,7 @@ def cookiemonster
       if line == 'quit'||line == 'exit'
         return
       elsif line == 'help'||line == '?'
-        puts "useradd <username>\nlogin <username>\nset <key> <value>\nget <key>\nbackup <path>\nquit\nexit\ncls clears the screen"
+        puts "useradd <username>\nlogin <username>\nset <key> <value>\nget <key>\ndel <key>\ndrop\nbackup <path>\nquit\nexit\ncls clears the screen"
       elsif line == 'cls'
         Linenoise.clear_screen
       elsif line.start_with?("useradd")
@@ -122,8 +136,8 @@ def cookiemonster
         elsif username && username.empty?
           puts "username cannot be empty"
         else
-          password = Cookiemonster.getpass("Enter new password:")
-          unless password == Cookiemonster.getpass("Retype new password:")
+          password = getpass("Enter new password:")
+          unless password.securecmp(getpass("Retype new password:"))
             puts "Passwords don't match"
             next
           end
@@ -140,7 +154,7 @@ def cookiemonster
         elsif username && username.empty?
           puts "username cannot be empty"
         else
-          password = Cookiemonster.getpass
+          password = getpass
           if !password
             puts "password missing, try 'help' or '?'"
           elsif password && password.empty?
@@ -149,11 +163,18 @@ def cookiemonster
             begin
               @cryptor = @monster.login(username, password)
               @user = MessagePack.unpack(username.to_msgpack)
-            rescue Cookiemonster::Error, Crypto::Error
+            rescue Cookiemonster::Error
+              puts "Login incorrect"
+              Sleep.sleep 5
+            rescue Crypto::Error
               puts "Login incorrect"
             end
           end
         end
+      elsif line == 'drop'
+        puts "Deleting #{@user} Database and exiting"
+        @cryptor.drop
+        return
       elsif line.start_with?('set')
         cmd, key, value = line.split("\s", 3)
         if !key||!value
@@ -175,8 +196,17 @@ def cookiemonster
           value = @cryptor[key]
           if value
             puts value
-            Sodium.memzero(value, value.bytesize)
+            Sodium.memzero(value)
           end
+        end
+      elsif line.start_with?('del')
+        cmd, key = line.split("\s", 2)
+        if !key
+          puts "key missing, try 'help' or '?'"
+        elsif key && key.empty?
+          puts "key cannot be empty"
+        else
+          @cryptor.del(key)
         end
       elsif line.start_with?('backup')
         cmd, path = line.split("\s", 2)
@@ -190,7 +220,7 @@ def cookiemonster
       else
         puts "Unknown command, try 'help' or '?"
       end
-      Sodium.memzero(line, line.bytesize)
+      Sodium.memzero(line)
     end
   end
 end

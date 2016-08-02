@@ -10,6 +10,8 @@ MRuby::Gem::Specification.new('mruby-cookiemonster') do |spec|
   spec.add_dependency 'mruby-simplemsgpack'
   spec.add_dependency 'mruby-linenoise'
   spec.add_dependency 'mruby-string-ext'
+  spec.add_dependency 'mruby-sleep'
+  spec.add_dependency 'mruby-getpass'
 
   if have_library('c', 'err', 'err.h') && have_const('EX_OSERR', 'sysexits.h')
     spec.cc.defines << 'MRB_COOKIEMONSTER_HAS_ERR_AND_SYSEXITS_H'

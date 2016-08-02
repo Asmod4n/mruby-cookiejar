@@ -1,9 +1,8 @@
 class Cookiemonster
   def initialize(db_path)
-    @env = MDB::Env.new(maxdbs: 2, mapsize: 2**32)
+    @env = MDB::Env.new(maxdbs: 127, mapsize: 2**32)
     @env.open(db_path, MDB::NOSUBDIR)
     @pwdb = @env.database(MDB::CREATE, "passwords")
-    @datadb = @env.database(MDB::CREATE, "data")
     @passwdqc = Passwdqc.new
   end
 
@@ -33,7 +32,7 @@ class Cookiemonster
       memlimit: Crypto::PwHash::MEMLIMIT_MODERATE}.to_msgpack
     keypair = Crypto::Box.keypair(seed)
     keypair[:secret_key].noaccess
-    Cryptor.new(@datadb, keypair)
+    Cryptor.new(@env.database(MDB::CREATE, Sodium.bin2hex(user_hash)), keypair)
   ensure
     Sodium.memzero(password) if password
     key.free if key
@@ -52,7 +51,7 @@ class Cookiemonster
     login[:nonce], key, user_hash)
     keypair = Crypto::Box.keypair(seed)
     keypair[:secret_key].noaccess
-    Cryptor.new(@datadb, keypair)
+    Cryptor.new(@env.database(MDB::CREATE, Sodium.bin2hex(user_hash)), keypair)
   ensure
     Sodium.memzero(password) if password
     key.free if key
