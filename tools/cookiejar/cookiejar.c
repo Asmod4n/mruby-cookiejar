@@ -1,6 +1,6 @@
 #include <mruby.h>
 #ifdef MRB_INT16
-#error "MRB_INT16 is too small for mruby-cookiemjar"
+#error "MRB_INT16 is too small for mruby-cookiejar"
 #endif
 #ifdef MRB_COOKIEJAR_HAS_ERR_AND_SYSEXITS_H
 #include <err.h>
