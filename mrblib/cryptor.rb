@@ -1,4 +1,4 @@
-class Cookiemonster
+class Cookiejar
   class Cryptor
     def initialize(datadb, keypair)
       unless Crypto::Box::PRIMITIVE == keypair[:primitive]

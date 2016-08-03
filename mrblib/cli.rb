@@ -1,10 +1,10 @@
-def cookiemonster
+def cookiejar
   if ARGV.count != 2
     puts "Usage: #{ARGV[0]} <database>"
     return
   end
-  @monster = Cookiemonster.new(ARGV[1])
-  if @monster.empty?
+  @jar = Cookiejar.new(ARGV[1])
+  if @jar.empty?
     puts "Add your first user"
   end
 
@@ -12,7 +12,7 @@ def cookiemonster
 
   while tried < 3
     user = linenoise("login:")
-    if @monster.empty?
+    if @jar.empty?
       password = getpass("Enter new password:")
     else
       password = getpass
@@ -20,9 +20,9 @@ def cookiemonster
     if !user||!password
       return
     end
-    if @monster.empty?
+    if @jar.empty?
       unless password.securecmp(getpass("Retype new password:"))
-        puts "Passwords don't macth\n\n"
+        puts "Passwords don't match\n\n"
         tried += 1
         next
       end
@@ -40,17 +40,18 @@ def cookiemonster
       next
     end
     begin
-      if @monster.empty?
-        @cryptor = @monster.useradd(user, password)
+      if @jar.empty?
+        @cryptor = @jar.useradd(user, password)
       else
-        @cryptor = @monster.login(user, password)
+        @cryptor = @jar.login(user, password)
       end
       @user = user
       break
-    rescue Cookiemonster::PasswordError => e
+    rescue Cookiejar::PasswordError => e
       tried += 1
       puts "#{e.class}: #{e}\n\n"
-    rescue Cookiemonster::Error
+      Sleep.sleep 5
+    rescue Cookiejar::Error
       tried += 1
       puts "Login incorrect\n\n"
       Sleep.sleep 5
@@ -121,7 +122,7 @@ def cookiemonster
   end
 
   puts "type '?' or 'help' to get help"
-  while (line = linenoise("cookiemonster#{@user ? ":(#{@user})" : nil}> "))
+  while (line = linenoise("cookiejar#{@user ? ":(#{@user})" : nil}> "))
     unless line.empty?
       if line == 'quit'||line == 'exit'
         return
@@ -142,8 +143,8 @@ def cookiemonster
             next
           end
           begin
-            @monster.useradd(username, password)
-          rescue Cookiemonster::Error => e
+            @jar.useradd(username, password)
+          rescue Cookiejar::Error => e
             puts "#{e.class}: #{e}"
           end
         end
@@ -161,9 +162,9 @@ def cookiemonster
             puts "password cannot be empty"
           else
             begin
-              @cryptor = @monster.login(username, password)
+              @cryptor = @jar.login(username, password)
               @user = MessagePack.unpack(username.to_msgpack)
-            rescue Cookiemonster::Error
+            rescue Cookiejar::Error
               puts "Login incorrect"
               Sleep.sleep 5
             rescue Crypto::Error
@@ -215,7 +216,7 @@ def cookiemonster
         elsif path.empty?
           puts "path cannot be empty"
         else
-          @monster.backup(path)
+          @jar.backup(path)
         end
       else
         puts "Unknown command, try 'help' or '?"

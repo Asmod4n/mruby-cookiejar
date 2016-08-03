@@ -1,8 +1,8 @@
 #include <mruby.h>
 #ifdef MRB_INT16
-#error "MRB_INT16 is too small for mruby-cookiemonster"
+#error "MRB_INT16 is too small for mruby-cookiemjar"
 #endif
-#ifdef MRB_COOKIEMONSTER_HAS_ERR_AND_SYSEXITS_H
+#ifdef MRB_COOKIEJAR_HAS_ERR_AND_SYSEXITS_H
 #include <err.h>
 #include <sysexits.h>
 #endif
@@ -15,7 +15,7 @@ int main(const int argc, const char** const argv)
 {
   mrb_state *mrb = mrb_open();
   if (!mrb) {
-#ifdef MRB_COOKIEMONSTER_HAS_ERR_AND_SYSEXITS_H
+#ifdef MRB_COOKIEJAR_HAS_ERR_AND_SYSEXITS_H
     err(EX_OSERR, NULL);
 #else
     return EXIT_FAILURE;
@@ -39,7 +39,7 @@ int main(const int argc, const char** const argv)
       mrb_gc_arena_restore(mrb, arena_index);
     }
 
-    mrb_funcall(mrb, mrb_top_self(mrb), "cookiemonster", 0);
+    mrb_funcall(mrb, mrb_top_self(mrb), "cookiejar", 0);
 
     mrb->jmp = prev_jmp;
   }

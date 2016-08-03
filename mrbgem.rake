@@ -1,9 +1,7 @@
-require 'mkmf'
-
-MRuby::Gem::Specification.new('mruby-cookiemonster') do |spec|
+MRuby::Gem::Specification.new('mruby-cookiejar') do |spec|
   spec.license = 'Apache-2'
   spec.author  = 'Hendrik Beskow'
-  spec.summary = "securely stores your secrets, so you don't have to"
+  spec.summary = "Stores your secrets, so you don't have to"
   spec.add_dependency 'mruby-passwdqc'
   spec.add_dependency 'mruby-lmdb'
   spec.add_dependency 'mruby-libsodium'
@@ -13,9 +11,9 @@ MRuby::Gem::Specification.new('mruby-cookiemonster') do |spec|
   spec.add_dependency 'mruby-sleep'
   spec.add_dependency 'mruby-getpass'
 
-  if have_library('c', 'err', 'err.h') && have_const('EX_OSERR', 'sysexits.h')
-    spec.cc.defines << 'MRB_COOKIEMONSTER_HAS_ERR_AND_SYSEXITS_H'
+  if spec.cc.search_header_path('err.h') && spec.cc.search_header_path('sysexits.h')
+    spec.cc.defines << 'MRB_COOKIEJAR_HAS_ERR_AND_SYSEXITS_H'
   end
 
-  spec.bins = ['cookiemonster']
+  spec.bins = ['cookiejar']
 end

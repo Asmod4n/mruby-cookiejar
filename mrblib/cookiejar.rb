@@ -1,4 +1,4 @@
-class Cookiemonster
+class Cookiejar
   def initialize(db_path)
     @env = MDB::Env.new(maxdbs: 127, mapsize: 2**32)
     @env.open(db_path, MDB::NOSUBDIR)
