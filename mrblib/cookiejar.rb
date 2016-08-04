@@ -25,7 +25,9 @@ class Cookiejar
       Crypto::PwHash::MEMLIMIT_MODERATE, Crypto::PwHash::ALG_ARGON2I13)
     seed = RandomBytes.buf(Crypto::Box::SEEDBYTES)
     ciphertext = Crypto::AEAD::Chacha20Poly1305.encrypt(seed, nonce, key, user_hash)
-    @pwdb[user_hash] = {salt: salt,
+    @pwdb[user_hash] = {
+      primitive: "chacha20poly1305"
+      salt: salt,
       nonce: nonce,
       ciphertext: ciphertext,
       opslimit: Crypto::PwHash::OPSLIMIT_MODERATE,
@@ -69,8 +71,34 @@ class Cookiejar
       raise UserNotExistsError, "User #{user} doesn't exist"
     end
 
+    login = MessagePack.unpack(login)
+    key = Crypto.pwhash(Crypto::AEAD::Chacha20Poly1305::KEYBYTES, oldpassword, login[:salt], login[:opslimit],
+      login[:memlimit], Crypto::PwHash::ALG_ARGON2I13)
+    seed = Crypto::AEAD::Chacha20Poly1305.decrypt(login[:ciphertext],
+    login[:nonce], key, user_hash)
     if reason = @passwdqc.check(newpassword, oldpassword)
       raise PasswordError, reason
     end
+    salt = Crypto::PwHash.salt
+    nonce = Crypto::AEAD::Chacha20Poly1305.nonce
+    key.free
+    key = Crypto.pwhash(Crypto::AEAD::Chacha20Poly1305::KEYBYTES, newpassword, salt, login[:opslimit],
+      login[:memlimit], Crypto::PwHash::ALG_ARGON2I13)
+    ciphertext = Crypto::AEAD::Chacha20Poly1305.encrypt(seed, nonce, key, user_hash)
+    @pwdb[user_hash] = {
+      primitive: "chacha20poly1305"
+      salt: salt,
+      nonce: nonce,
+      ciphertext: ciphertext,
+      opslimit: login[:opslimit],
+      memlimit: login[:memlimit]}.to_msgpack
+    keypair = Crypto::Box.keypair(seed)
+    keypair[:secret_key].noaccess
+    Cryptor.new(@env.database(MDB::CREATE, Sodium.bin2hex(user_hash)), keypair)
+  ensure
+    Sodium.memzero(oldpassword) if oldpassword
+    Sodium.memzero(newpassword) if newpassword
+    key.free if key
+    Sodium.memzero(seed) if seed
   end
 end

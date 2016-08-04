@@ -22,9 +22,9 @@ int main(const int argc, const char** const argv)
 #endif
   }
 
-  int ret = EXIT_SUCCESS;
   struct mrb_jmpbuf* prev_jmp = mrb->jmp;
   struct mrb_jmpbuf c_jmp;
+  int ret = EXIT_SUCCESS;
 
   MRB_TRY(&c_jmp)
   {
