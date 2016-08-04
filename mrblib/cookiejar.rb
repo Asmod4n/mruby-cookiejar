@@ -26,7 +26,7 @@ class Cookiejar
     seed = RandomBytes.buf(Crypto::Box::SEEDBYTES)
     ciphertext = Crypto::AEAD::Chacha20Poly1305.encrypt(seed, nonce, key, user_hash)
     @pwdb[user_hash] = {
-      primitive: "chacha20poly1305"
+      primitive: "chacha20poly1305",
       salt: salt,
       nonce: nonce,
       ciphertext: ciphertext,
@@ -76,17 +76,17 @@ class Cookiejar
       login[:memlimit], Crypto::PwHash::ALG_ARGON2I13)
     seed = Crypto::AEAD::Chacha20Poly1305.decrypt(login[:ciphertext],
     login[:nonce], key, user_hash)
+    key.free
     if reason = @passwdqc.check(newpassword, oldpassword)
       raise PasswordError, reason
     end
     salt = Crypto::PwHash.salt
     nonce = Crypto::AEAD::Chacha20Poly1305.nonce
-    key.free
     key = Crypto.pwhash(Crypto::AEAD::Chacha20Poly1305::KEYBYTES, newpassword, salt, login[:opslimit],
       login[:memlimit], Crypto::PwHash::ALG_ARGON2I13)
     ciphertext = Crypto::AEAD::Chacha20Poly1305.encrypt(seed, nonce, key, user_hash)
     @pwdb[user_hash] = {
-      primitive: "chacha20poly1305"
+      primitive: "chacha20poly1305",
       salt: salt,
       nonce: nonce,
       ciphertext: ciphertext,
@@ -98,7 +98,9 @@ class Cookiejar
   ensure
     Sodium.memzero(oldpassword) if oldpassword
     Sodium.memzero(newpassword) if newpassword
-    key.free if key
+    if key
+      key.free unless key.nil?
+    end
     Sodium.memzero(seed) if seed
   end
 end
