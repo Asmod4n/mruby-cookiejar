@@ -1,4 +1,7 @@
 class Cookiejar
+  MessagePack.register_pack_type(0, Symbol) { |symbol| symbol.to_s }
+  MessagePack.register_unpack_type(0) { |data| data.to_sym }
+
   def initialize(db_path)
     @env = MDB::Env.new(maxdbs: 127, mapsize: 2**32)
     @env.open(db_path, MDB::NOSUBDIR)
@@ -23,7 +26,8 @@ class Cookiejar
     nonce = Crypto::AEAD::Chacha20Poly1305.nonce
     key = Crypto.pwhash(Crypto::AEAD::Chacha20Poly1305::KEYBYTES, password, salt, Crypto::PwHash::OPSLIMIT_MODERATE,
       Crypto::PwHash::MEMLIMIT_MODERATE, Crypto::PwHash::ALG_ARGON2I13)
-    seed = RandomBytes.buf(Crypto::Box::SEEDBYTES)
+    seed = RandomBytes.buf(Sodium::SecureBuffer.new(Crypto::Box::SEEDBYTES))
+    seed.readonly
     ciphertext = Crypto::AEAD::Chacha20Poly1305.encrypt(seed, nonce, key, user_hash)
     @pwdb[user_hash] = {
       primitive: "chacha20poly1305",
@@ -33,12 +37,13 @@ class Cookiejar
       opslimit: Crypto::PwHash::OPSLIMIT_MODERATE,
       memlimit: Crypto::PwHash::MEMLIMIT_MODERATE}.to_msgpack
     keypair = Crypto::Box.keypair(seed)
+    seed.noaccess
     keypair[:secret_key].noaccess
     Cryptor.new(@env.database(MDB::CREATE, Sodium.bin2hex(user_hash)), keypair)
   ensure
     Sodium.memzero(password) if password
     key.free if key
-    Sodium.memzero(seed) if seed
+    seed.free if seed
   end
 
   def login(user, password)
@@ -66,6 +71,9 @@ class Cookiejar
   end
 
   def passwd(user, oldpassword, newpassword)
+    if reason = @passwdqc.check(newpassword, oldpassword)
+      raise PasswordError, reason
+    end
     user_hash = Crypto.generichash(user, Crypto::GenericHash::BYTES)
     unless login = @pwdb[user_hash]
       raise UserNotExistsError, "User #{user} doesn't exist"
@@ -77,9 +85,7 @@ class Cookiejar
     seed = Crypto::AEAD::Chacha20Poly1305.decrypt(login[:ciphertext],
     login[:nonce], key, user_hash)
     key.free
-    if reason = @passwdqc.check(newpassword, oldpassword)
-      raise PasswordError, reason
-    end
+
     salt = Crypto::PwHash.salt
     nonce = Crypto::AEAD::Chacha20Poly1305.nonce
     key = Crypto.pwhash(Crypto::AEAD::Chacha20Poly1305::KEYBYTES, newpassword, salt, login[:opslimit],
@@ -98,9 +104,7 @@ class Cookiejar
   ensure
     Sodium.memzero(oldpassword) if oldpassword
     Sodium.memzero(newpassword) if newpassword
-    if key
-      key.free unless key.nil?
-    end
+    key.free unless key.nil?
     Sodium.memzero(seed) if seed
   end
 end

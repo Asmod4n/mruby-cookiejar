@@ -1,6 +1,6 @@
 def cookiejar
   if ARGV.count != 2
-    puts "Usage: #{ARGV[0]} <database>"
+    puts "Usage: #{ARGV[0]} <database_path>"
     return
   end
   @jar = Cookiejar.new(ARGV[1])
@@ -127,7 +127,7 @@ def cookiejar
       if line == 'quit'||line == 'exit'
         return
       elsif line == 'help'||line == '?'
-        puts "useradd <username>\nlogin <username>\nset <key> <value>\nget <key>\ndel <key>\ndrop\nbackup <path>\nquit\nexit\ncls clears the screen"
+        puts "useradd <username>\nlogin <username>\nset <key> <value>\nget <key>\ndel <key>\ndrop drops the current user database and exits\nbackup <path>\nquit\nexit\ncls clears the screen"
       elsif line == 'cls'
         Linenoise.clear_screen
       elsif line.start_with?("useradd")

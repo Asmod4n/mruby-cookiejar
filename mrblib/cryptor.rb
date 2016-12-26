@@ -31,7 +31,7 @@ class Cookiejar
       end
       ciphertext = MessagePack.unpack(ciphertext)
       value = Crypto::Box.open(ciphertext[:ciphertext], ciphertext[:nonce], @keypair[:public_key], @keypair[:secret_key])
-      MessagePack.unpack(value, true)
+      MessagePack.unpack(value)
     ensure
       Sodium.memzero(key) if key
       @keypair[:secret_key].noaccess
