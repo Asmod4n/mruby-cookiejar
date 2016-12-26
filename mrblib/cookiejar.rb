@@ -1,6 +1,6 @@
 class Cookiejar
-  MessagePack.register_pack_type(0, Symbol) { |symbol| symbol.to_s }
-  MessagePack.register_unpack_type(0) { |data| data.to_sym }
+  MessagePack.register_pack_type(1, Symbol) { |symbol| symbol.to_s }
+  MessagePack.register_unpack_type(1) { |data| data.to_sym }
 
   def initialize(db_path)
     @env = MDB::Env.new(maxdbs: 127, mapsize: 2**32)
