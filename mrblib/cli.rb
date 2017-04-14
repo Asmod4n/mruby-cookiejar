@@ -1,6 +1,6 @@
 def cookiejar
   if ARGV.count != 2
-    puts "Usage: #{ARGV[0]} <database_path>"
+    printf("Usage: %s <database_path>\n", ARGV[0])
     return
   end
   @jar = Cookiejar.new(ARGV[1])
@@ -45,11 +45,10 @@ def cookiejar
       else
         @cryptor = @jar.login(user, password)
       end
-      @user = user
       break
     rescue Cookiejar::PasswordError => e
       tried += 1
-      puts "#{e.class}: #{e}\n\n"
+      printf("%s: %s\n\n\n", e.class, e)
       Sleep.sleep 5
     rescue Cookiejar::Error
       tried += 1
@@ -122,7 +121,7 @@ def cookiejar
   end
 
   puts "type '?' or 'help' to get help"
-  while (line = linenoise("cookiejar#{@user ? ":(#{@user})" : nil}> "))
+  while (line = linenoise("cookiejar> "))
     unless line.empty?
       if line == 'quit'||line == 'exit'
         return
@@ -145,7 +144,7 @@ def cookiejar
           begin
             @jar.useradd(username, password)
           rescue Cookiejar::Error => e
-            puts "#{e.class}: #{e}"
+            printf("%s: %s\n", e.class, e)
           end
         end
       elsif line.start_with?('login')
@@ -163,7 +162,6 @@ def cookiejar
           else
             begin
               @cryptor = @jar.login(username, password)
-              @user = MessagePack.unpack(username.to_msgpack)
             rescue Cookiejar::Error
               puts "Login incorrect"
               Sleep.sleep 5
@@ -173,7 +171,7 @@ def cookiejar
           end
         end
       elsif line == 'drop'
-        puts "Deleting #{@user} Database and exiting"
+        puts "Deleting Database and exiting"
         @cryptor.drop
         return
       elsif line.start_with?('set')

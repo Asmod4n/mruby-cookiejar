@@ -16,7 +16,7 @@ class Cookiejar
   def useradd(user, password)
     user_hash = Crypto.generichash(user, Crypto::GenericHash::BYTES)
     if @pwdb[user_hash]
-      raise UserExistsError, "User #{user} already exists"
+      raise UserExistsError, "User already exists"
     end
     if reason = @passwdqc.check(password)
       raise PasswordError, reason
@@ -49,7 +49,7 @@ class Cookiejar
   def login(user, password)
     user_hash = Crypto.generichash(user, Crypto::GenericHash::BYTES)
     unless login = @pwdb[user_hash]
-      raise UserNotExistsError, "User #{user} doesn't exist"
+      raise UserNotExistsError, "User doesn't exist"
     end
     login = MessagePack.unpack(login)
     key = Crypto.pwhash(Crypto::AEAD::Chacha20Poly1305::KEYBYTES, password, login[:salt], login[:opslimit],
@@ -76,7 +76,7 @@ class Cookiejar
     end
     user_hash = Crypto.generichash(user, Crypto::GenericHash::BYTES)
     unless login = @pwdb[user_hash]
-      raise UserNotExistsError, "User #{user} doesn't exist"
+      raise UserNotExistsError, "User doesn't exist"
     end
 
     login = MessagePack.unpack(login)
